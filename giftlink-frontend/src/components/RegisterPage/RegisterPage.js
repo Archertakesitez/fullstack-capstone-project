@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-
+import {urlConfig} from '../../config';
+import { useAppContext } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './RegisterPage.css';
 
 function RegisterPage() {
@@ -9,10 +11,43 @@ function RegisterPage() {
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-
+    const [showerr, setShowerr] = useState('');
+    const navigate = useNavigate();
+    const { setIsLoggedIn } = useAppContext();
     // insert code here to create handleRegister function and include console.log
     const handleRegister = async () => {
-        console.log("Register invoked")
+        try{
+          const response = await fetch(`${urlConfig.backendUrl}/api/auth/register`, {
+               //{{Insert code here}} //Task 6: Set method
+               method: 'POST',
+               //{{Insert code here}} //Task 7: Set headers
+               headers: {
+                'Content-Type': 'application/json',
+               },
+               //{{Insert code here}} //Task 8: Set body to send user details
+               body: JSON.stringify({
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                password: password
+            })
+         })
+         const json = await response.json();
+         if (json.authtoken) {
+            sessionStorage.setItem('auth-token', json.authtoken);
+            sessionStorage.setItem('name', firstName);
+            sessionStorage.setItem('email', json.email);
+            //insert code for setting logged in state
+            setIsLoggedIn(true);
+            //insert code for navigating to MainPAge
+            navigate('/app');
+}
+        if (json.error) {
+            setShowerr(json.error);
+        } 
+        }catch (e) {
+            console.log("Error fetching details: " + e.message);
+        }
     }
 
          return (
@@ -67,6 +102,7 @@ function RegisterPage() {
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
+                    <div className="text-danger">{showerr}</div>
                     <button className="btn btn-primary w-100 mb-3" onClick={handleRegister}>Register</button>
                         <p className="mt-4 text-center">
                             Already a member? <a href="/app/login" className="text-primary">Login</a>
