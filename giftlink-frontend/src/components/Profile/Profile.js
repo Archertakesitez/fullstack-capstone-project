@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import './Profile.css'
-import {urlConfig} from '../../config';
 import { useAppContext } from '../../context/AuthContext';
 
 const Profile = () => {
@@ -12,9 +11,9 @@ const Profile = () => {
 
  const [editMode, setEditMode] = useState(false);
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [email] = useState('');
   const authtoken = sessionStorage.getItem('auth-token');
-  const [payload, setPayload] = useState({
+  const [payload] = useState({
     name: '',
   });
 
