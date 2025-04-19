@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './LoginPage.css';
 import {urlConfig} from '../../config';
 import { useAppContext } from '../../context/AuthContext';
@@ -21,7 +21,7 @@ function LoginPage() {
     const handleLogin = async () => {
       try{
           //first task
-        const response = await fetch(`/api/auth/login`, {
+        const response = await fetch(`${urlConfig.backendUrl}/api/auth/login`, {
              //{{Insert code here}} //Task 7: Set method
              method: 'POST',
              //{{Insert code here}} //Task 8: Set headers
@@ -36,7 +36,7 @@ function LoginPage() {
             })
        })
         // Task 1: Access data coming from fetch API
-        const json = await res.json();
+        const json = await response.json();
         // Task 2: Set user details
         sessionStorage.setItem('auth-token', json.authtoken);
         sessionStorage.setItem('name', json.userName);

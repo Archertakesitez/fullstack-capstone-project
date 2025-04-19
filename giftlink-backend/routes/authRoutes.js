@@ -1,6 +1,5 @@
 //Step 1 - Task 2: Import necessary packages
 const express = require('express');
-const app = express();
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
@@ -9,7 +8,6 @@ const router = express.Router();
 const dotenv = require('dotenv');
 const pino = require('pino');  // Import Pino logger
 //Step 1 - Task 3: Create a Pino logger instance
-const { body, validationResult } = require('express-validator');
 const logger = pino();  // Create a Pino logger instance
 dotenv.config();
 
@@ -26,6 +24,11 @@ router.post('/register', async (req, res) => {
         //Task 3: Check for existing email
          // {{insert code here}}
         const existingEmail = await collection.findOne({ email: req.body.email });
+        if (existingEmail) {
+            logger.error('Email already exists');
+            return res.status(400).json({ error: 'Email already exists' });
+        }
+
         const salt = await bcryptjs.genSalt(10);
         const hash = await bcryptjs.hash(req.body.password, salt);
         const email = req.body.email;
@@ -49,47 +52,42 @@ router.post('/register', async (req, res) => {
         logger.info('User registered successfully');
         res.json({authtoken,email});
     } catch (e) {
-         return res.status(500).send('Internal server error');
+        logger.error('Error:', e);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 router.post('/login', async (req, res) => {
     try {
-        // Task 1: Connect to `giftsdb` in MongoDB through `connectToDatabase` in `db.js`.
         const db = await connectToDatabase();
-        // Task 2: Access MongoDB `users` collection
         const collection = db.collection("users");
-        // Task 3: Check for user credentials in database
         const theUser = await collection.findOne({ email: req.body.email });
-        // Task 4: Task 4: Check if the password matches the encrypyted password and send appropriate message on mismatch
-        if (theUser) {
-            let result = await bcryptjs.compare(req.body.password, theUser.password)
-          if(!result) {
-                logger.error('Passwords do not match');
-                return res.status(404).json({ error: 'Wrong pasword' });
-            }
-            //continue other tasks
+
+        if (!theUser) {
+            logger.error('User not found');
+            return res.status(404).json({ error: 'User not found' });
         }
-        // Task 5: Fetch user details from database
-        const userName = theUser.firstName;
-        const userEmail = theUser.email;
-        // Task 6: Create JWT authentication if passwords match with user._id as payload
-        let payload = {
+
+        let result = await bcryptjs.compare(req.body.password, theUser.password)
+        if(!result) {
+            logger.error('Passwords do not match');
+            return res.status(404).json({ error: 'Wrong password' });
+        }
+
+        const payload = {
             user: {
                 id: theUser._id.toString(),
             },
         };
         const authtoken = jwt.sign(payload, JWT_SECRET);
-        res.json({authtoken, userName, userEmail });
-        // Task 7: Send appropriate message if user not found
-        if (theUser) {
-            // Tasks 1-6 as done previously
-        } else {
-            logger.error('User not found');
-            return res.status(404).json({ error: 'User not found' });
-        }
-    } catch (e) {
-         return res.status(500).send('Internal server error');
+        res.json({
+            authtoken, 
+            userName: theUser.firstName, 
+            userEmail: theUser.email 
+        });
 
+    } catch (e) {
+        logger.error('Error:', e);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 // {Insert it along with other imports} Task 1: Use the `body`,`validationResult` from `express-validator` for input validation
@@ -130,6 +128,7 @@ router.put('/update', async (req, res) => {
         const authtoken = jwt.sign(payload, JWT_SECRET);
         res.json({authtoken});
     } catch (e) {
+        logger.error('Error:', e);
         return res.status(500).send('Internal server error');
 
     }
